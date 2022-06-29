@@ -95,6 +95,7 @@ class PPReplace {
    * the replacement-list. The sequence is terminated by the matching ) token, skipping intervening matched pairs of
    * left and right parentheses.
    */
+  @SuppressWarnings({"java:S3776", "java:S1541"})
   private static int extractArguments(List<Token> tokens, List<Token> arguments) {
     // argument list must start with '('
     int size = tokens.size();
@@ -177,6 +178,7 @@ class PPReplace {
    * identifiers (which are not macro-expanded first) and then concatenates the result.
    *
    */
+  @SuppressWarnings({"java:S3776"})
   private void handleOperators(List<Token> replacementList, List<String> parameters, List<Token> arguments,
                                List<Token> result) {
 
@@ -259,8 +261,8 @@ class PPReplace {
    * (1) A ## ## B == A ## B
    * (2) A ## B ## C ...
    */
-  private int handleConcatenation(List<Token> replacementList, List<String> parameters, List<Token> arguments,
-                                  List<Token> result) {
+  private static int handleConcatenation(List<Token> replacementList, List<String> parameters, List<Token> arguments,
+                                         List<Token> result) {
 
     int tokensConsumed = 0;
 
@@ -288,7 +290,7 @@ class PPReplace {
    * In function-like macros, a # operator before an identifier in the argument-list runs the identifier through
    * parameter argument and encloses the result in quotes, effectively creating a string literal.
    */
-  private boolean handleStringification(List<Token> replacementList, Token argument, List<Token> result) {
+  private static boolean handleStringification(List<Token> replacementList, Token argument, List<Token> result) {
     if (PPPunctuator.HASH.equals(replacementList.get(0).getType())) {
       result.set(result.size() - 1,
                  PPGeneratedToken.build(argument, argument.getType(),
@@ -307,7 +309,7 @@ class PPReplace {
    * the ## does nothing when the variable arguments are present, but removes the comma when the variable arguments are
    * not present: this makes it possible to define macros such as fprintf (stderr, format, ##__VA_ARGS__).
    */
-  private void handleEmptyVaArgs(List<Token> replacementList, List<Token> result) {
+  private static void handleEmptyVaArgs(List<Token> replacementList, List<Token> result) {
     if (!"__VA_ARGS__".equals(replacementList.get(0).getValue())) {
       return;
     }
@@ -329,6 +331,8 @@ class PPReplace {
           case COMMA: // (2)
             result.remove(lastIndex);
             break;
+          default:
+            break;
         }
       }
     }
@@ -344,6 +348,7 @@ class PPReplace {
    * __VA_OPT__ ( pp-tokensopt )
    * </code>
    */
+  @SuppressWarnings({"java:S3776", "java:S1142"})
   private int handleVaOpt(List<Token> replacementList, List<String> parameters, List<Token> arguments,
                           List<Token> result) {
     var firstIndex = -1;
@@ -370,21 +375,23 @@ class PPReplace {
       }
     }
 
+    int consumedTokens = 0;
+
     if (firstIndex != -1 && lastIndex != -1) {
       if (parameters.size() == arguments.size()) {
         // __VA_OPT__ ( pp-tokensopt ), keep pp-tokensopt
         var ppTokens = replacementList.subList(firstIndex + 1, lastIndex);
         handleOperators(ppTokens, parameters, arguments, result);
-        return 2 + ppTokens.size();
+        consumedTokens = 2 + ppTokens.size();
       } else {
         // remove __VA_OPT__ ( pp-tokensopt )
-        return 1 + lastIndex - firstIndex;
+        consumedTokens = 1 + lastIndex - firstIndex;
       }
     }
 
     LOG.error("preprocessor '__VA_OPT__* error: {}:{}",
               replacementList.get(0).getLine(), replacementList.get(0).getColumn()); // todo
-    return 0;
+    return consumedTokens;
   }
 
 }
