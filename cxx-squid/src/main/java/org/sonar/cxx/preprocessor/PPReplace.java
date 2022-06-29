@@ -25,8 +25,6 @@ import com.sonar.cxx.sslr.api.TokenType;
 import com.sonar.cxx.sslr.impl.token.TokenUtils;
 import java.util.ArrayList;
 import java.util.List;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonar.cxx.parser.CxxKeyword;
 import org.sonar.cxx.parser.CxxTokenType;
 
@@ -36,7 +34,6 @@ import org.sonar.cxx.parser.CxxTokenType;
  */
 class PPReplace {
 
-  private static final Logger LOG = Loggers.get(PPReplace.class);
   private final CxxPreprocessor pp;
 
   PPReplace(CxxPreprocessor pp) {
@@ -150,7 +147,6 @@ class PPReplace {
       }
     }
 
-    LOG.error("preprocessor 'matchArguments' error, missing ')': {}", tokens.toString());
     return 0;
   }
 
@@ -198,10 +194,9 @@ class PPReplace {
         //
         // not a token to be replaced by a macro argument
         //
-        if ((i = handleVaOpt(view, parameters, arguments, result)) <= 0) {
-          if ((i = handleConcatenation(view, parameters, arguments, result)) <= 0) {
-            result.add(token);
-          }
+        if (((i = handleVaOpt(view, parameters, arguments, result)) <= 0)
+              && ((i = handleConcatenation(view, parameters, arguments, result)) <= 0)) {
+          result.add(token);
         }
       } else if (parameterIndex < arguments.size()) {
         //
@@ -209,11 +204,10 @@ class PPReplace {
         //
         argument = arguments.get(parameterIndex);
 
-        if ((i = handleConcatenation(view, parameters, arguments, result)) <= 0) {
-          if (tokensConsumed < 1 || !handleStringification(
-            replacementList.subList(tokensConsumed - 1, replacementList.size()), argument, result)) {
-            newValue = expand(argument.getValue());
-          }
+        if (((i = handleConcatenation(view, parameters, arguments, result)) <= 0)
+              && (tokensConsumed < 1 || !handleStringification(
+                  replacementList.subList(tokensConsumed - 1, replacementList.size()), argument, result))) {
+          newValue = expand(argument.getValue());
         }
       }
 
@@ -389,8 +383,6 @@ class PPReplace {
       }
     }
 
-    LOG.error("preprocessor '__VA_OPT__* error: {}:{}",
-              replacementList.get(0).getLine(), replacementList.get(0).getColumn()); // todo
     return consumedTokens;
   }
 
