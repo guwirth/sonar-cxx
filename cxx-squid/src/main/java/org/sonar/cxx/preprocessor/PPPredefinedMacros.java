@@ -38,7 +38,7 @@ final class PPPredefinedMacros {
     // set C++14 as default
     "__cplusplus 201402L",
     // __has_include support (C++17)
-    "__has_include 1"
+    "__has_include __has_include" // define __has_include as macro, for e.g. #if __has_include
   };
 
   private PPPredefinedMacros() {
